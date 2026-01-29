@@ -1,7 +1,7 @@
 {
   "name": "usmessage",
   "version": "0.1.0",
-  "description": "Windows app to view and send iMessage photos and group chats from your iPhone",
+  "description": "Windows app to view and send iMessage photos and group chats from your iPhone via Bluetooth",
   "main": "dist/main/main.js",
   "author": "Michael-MakeAnything",
   "license": "MIT",
@@ -14,14 +14,17 @@
     "build:main": "tsc -p tsconfig.main.json",
     "start": "electron .",
     "package": "npm run build && electron-builder",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "rebuild": "electron-rebuild"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
@@ -42,6 +45,9 @@
     "win": {
       "target": ["nsis"],
       "icon": "assets/icon.ico"
-    }
+    },
+    "extraResources": [
+      "assets/**"
+    ]
   }
 }

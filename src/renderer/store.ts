@@ -33,6 +33,13 @@ export interface DeviceStatus {
   deviceName: string | null;
 }
 
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  type: 'bluetooth' | 'usb' | 'wifi';
+  connected: boolean;
+}
+
 interface AppState {
   // Device
   deviceStatus: DeviceStatus;
