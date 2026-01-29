@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, Notification } from 'electron';
 import * as path from 'path';
 import { deviceManager } from './services/device-manager';
 import { messageService } from './services/message-service';
+import { windowsBluetooth, setupBluetoothIPC } from './services/windows-bluetooth';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -24,6 +25,25 @@ function createWindow(): void {
     },
     backgroundColor: '#1a1a1a',
   });
+
+  // Enable Web Bluetooth
+  mainWindow.webContents.session.setPermissionCheckHandler((webContents, permission) => {
+    if (permission === 'bluetooth') {
+      return true;
+    }
+    return true;
+  });
+
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'bluetooth') {
+      callback(true);
+    } else {
+      callback(true);
+    }
+  });
+
+  // Initialize Bluetooth handling for this window
+  windowsBluetooth.initialize(mainWindow);
 
   // Load the app
   if (process.env.NODE_ENV === 'development') {
@@ -58,6 +78,11 @@ function setupDeviceListeners(): void {
   deviceManager.on('connection-state', (state) => {
     mainWindow?.webContents.send('connection-state', state);
   });
+
+  // Listen for Bluetooth device discoveries
+  windowsBluetooth.on('devices-found', (devices) => {
+    mainWindow?.webContents.send('bluetooth-devices-found', devices);
+  });
 }
 
 function setupMessageListeners(): void {
@@ -82,6 +107,7 @@ app.whenReady().then(() => {
   createWindow();
   setupDeviceListeners();
   setupMessageListeners();
+  setupBluetoothIPC();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -104,11 +130,27 @@ ipcMain.handle('get-device-status', async () => {
 });
 
 ipcMain.handle('scan-devices', async () => {
-  return deviceManager.scanForDevices();
+  // Trigger Web Bluetooth scan
+  try {
+    await windowsBluetooth.requestDeviceScan();
+    // Return any discovered devices
+    return windowsBluetooth.getDiscoveredDevices().map(d => ({
+      id: d.deviceId,
+      name: d.deviceName || 'Unknown Device',
+      type: 'bluetooth' as const,
+      connected: false,
+    }));
+  } catch (error) {
+    console.error('Bluetooth scan error:', error);
+    return [];
+  }
 });
 
 ipcMain.handle('connect-device', async (_event, deviceId: string) => {
   try {
+    // First try to select the device via Web Bluetooth
+    windowsBluetooth.selectDevice(deviceId);
+    // Then connect via device manager
     await deviceManager.connect(deviceId);
     return { success: true };
   } catch (error) {

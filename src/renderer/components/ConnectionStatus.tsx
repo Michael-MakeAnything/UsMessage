@@ -1,6 +1,10 @@
 import { useStore } from '../store';
 
-function ConnectionStatus() {
+interface ConnectionStatusProps {
+  onSettingsClick: () => void;
+}
+
+function ConnectionStatus({ onSettingsClick }: ConnectionStatusProps) {
   const { deviceStatus } = useStore();
 
   return (
@@ -9,6 +13,9 @@ function ConnectionStatus() {
       <span className="status-text">
         {deviceStatus.connected ? `Connected to ${deviceStatus.deviceName}` : 'iPhone not connected'}
       </span>
+      <button className="settings-btn" onClick={onSettingsClick} title="Settings">
+        ⚙
+      </button>
     </div>
   );
 }
